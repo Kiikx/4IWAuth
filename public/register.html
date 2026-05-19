@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr-FR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S'inscrire</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+      <div class="container-fluid">
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="#"> Accueil </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="register.html"
+                >S'inscrire</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="admin-page"> Administation </a>
+            </li>
+          </ul>
+        </div>
+        <a class="nav-link" href="#" onclick="logout()">Se déconnecter</a>
+      </div>
+    </nav>
+    <main class="container">
+      <h1>S'inscrire</h1>
+      <form id="register-form">
+        <label for="username">Nom d'utilisateur</label>
+        <input
+          type="text"
+          id="username"
+          placeholder="Nom d'utilisateur"
+          required
+          class="form-control"
+        />
+        <label for="password">Mot de passe</label>
+        <input
+          type="password"
+          id="password"
+          placeholder="Mot de passe"
+          required
+          class="form-control"
+        />
+        <button type="submit" class="btn btn-primary mt-2">S'inscrire</button>
+        <p id="message"></p>
+        <a href="admin-page">Déjà un compte ? 🔒 Administration</a>
+      </form>
+    </main>
+    <script src="register.js"></script>
+    <script src="logout.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
