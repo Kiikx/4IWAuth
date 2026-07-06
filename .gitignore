@@ -3,3 +3,5 @@ node_modules
 auth_demo.db
 *.db-journal
 TP1 - Le syste me de se curite de la Batcave-1.pdf
+.env
+TP2 Le syste me de badges de la batcave.pdf
