@@ -12,4 +12,17 @@ db.prepare(
 `
 ).run()
 
+// Création de la table reports liée aux utilisateurs
+db.prepare(
+  `
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    mission_note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )
+`
+).run()
+
 module.exports = db

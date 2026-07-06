@@ -20,6 +20,10 @@ app.post('/register', async (req, res) => {
   // Récupère les identifiants saisis par l'utilisateur
   const { username, password } = req.body
 
+  if (!username || typeof username !== 'string') {
+    return res.status(400).send("Le nom d'utilisateur est obligatoire.")
+  }
+
   if (!password || password.length < 8) {
     return res.status(400).send('Le mot de passe doit faire au moins 8 caractères.')
   }
@@ -29,6 +33,10 @@ app.post('/register', async (req, res) => {
   // Vérification que le username n'est pas vide après trim
   if (!cleanUsername) {
     return res.status(400).send('Le nom d\'utilisateur ne peut pas être vide.')
+  }
+
+  if (/\s/.test(cleanUsername)) {
+    return res.status(400).send("Le nom d'utilisateur ne doit pas contenir d'espaces.")
   }
 
   // Hachage du mot de passe avant stockage !
@@ -74,12 +82,12 @@ const checkAuth = async (req, res, next) => {
   }
 }
 
-app.get('/admin-page', checkAuth, (req, res) => {
+app.get(['/admin-page', '/admin-page.html'], checkAuth, (req, res) => {
   // La route sert uniquement le fichier HTML
   res.sendFile(__dirname + '/views/admin-page.html')
 })
 
-app.get('/bat-computer', checkAuth, (req, res) => {
+app.get(['/bat-computer', '/bat-computer.html'], checkAuth, (req, res) => {
   res.sendFile(__dirname + '/private/bat-computer.html')
 })
 
@@ -91,4 +99,34 @@ app.get('/api/secrets', checkAuth, (req, res) => {
     { "name": "Batmobile", "desc": "Véhicule principal", "icon": "fa-car" }
   ]
   res.json(secrets)
+})
+
+app.get('/api/me', checkAuth, (req, res) => {
+  res.json({
+    id: req.user.id,
+    username: req.user.username
+  })
+})
+
+app.post('/api/reports', checkAuth, (req, res) => {
+  const { mission_note } = req.body
+
+  if (!mission_note || mission_note.trim() === '') {
+    return res.status(400).send('La note de mission ne peut pas être vide.')
+  }
+
+  try {
+    const insert = db.prepare(
+      'INSERT INTO reports (user_id, mission_note) VALUES (?, ?)'
+    )
+    insert.run(req.user.id, mission_note)
+    res.status(201).json({ message: 'Rapport enregistré avec succès !' })
+  } catch (err) {
+    res.status(500).send('Erreur lors de l\'enregistrement du rapport.')
+  }
+})
+
+app.get('/logout', (req, res) => {
+  res.setHeader('WWW-Authenticate', 'Basic realm="Administration"')
+  res.status(401).send('Déconnecté')
 })
