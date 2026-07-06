@@ -64,6 +64,11 @@
               <div id="message" class="mt-3"></div>
             </div>
           </div>
+          <section class="mt-4">
+            <h2 class="h4">Arsenal</h2>
+            <div id="arsenal-message" class="alert alert-info">Chargement de l'arsenal...</div>
+            <div id="arsenal-grid" class="row g-3"></div>
+          </section>
         </div>
       </div>
     </main>
@@ -103,6 +108,62 @@
           document.getElementById('message').innerHTML = '<div class="alert alert-danger">Erreur réseau</div>'
         }
       })
+
+      const createSecretCard = secret => {
+        const column = document.createElement("div")
+        column.className = "col-sm-6 col-lg-3"
+        column.innerHTML = `<article class="card h-100"><div class="card-body"><span class="badge text-bg-dark mb-3"></span><h3 class="h5 card-title"></h3><p class="card-text"></p></div></article>`
+        column.querySelector("span").textContent = secret.icon
+        column.querySelector("h3").textContent = secret.name
+        column.querySelector("p").textContent = secret.desc
+        return column
+      }
+
+      const loadSecrets = async () => {
+        const messageDiv = document.getElementById("arsenal-message")
+        const grid = document.getElementById("arsenal-grid")
+        let authorization = sessionStorage.getItem("basicAuthHeader")
+
+        if (!authorization) {
+          const username = window.prompt("Utilisateur Basic Auth")
+          const password = window.prompt("Mot de passe Basic Auth")
+
+          if (!username || !password) {
+            messageDiv.className = "alert alert-warning"
+            messageDiv.textContent = "Arsenal non chargé."
+            return
+          }
+
+          authorization = "Basic " + btoa(username + ":" + password)
+          sessionStorage.setItem("basicAuthHeader", authorization)
+        }
+
+        try {
+          const response = await fetch("/api/secrets", {
+            headers: { Authorization: authorization }
+          })
+
+          if (!response.ok) {
+            sessionStorage.removeItem("basicAuthHeader")
+            messageDiv.className = "alert alert-danger"
+            messageDiv.textContent = "Impossible de charger l'arsenal."
+            return
+          }
+
+          const secrets = await response.json()
+          grid.innerHTML = ""
+          secrets.forEach(secret => {
+            grid.appendChild(createSecretCard(secret))
+          })
+          messageDiv.remove()
+        } catch (error) {
+          console.error("Erreur:", error)
+          messageDiv.className = "alert alert-danger"
+          messageDiv.textContent = "Erreur réseau"
+        }
+      }
+
+      loadSecrets()
     </script>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
