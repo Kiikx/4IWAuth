@@ -1,2 +1,5 @@
 node_modules
 .DS_Store
+auth_demo.db
+*.db-journal
+TP1 - Le syste me de se curite de la Batcave-1.pdf
