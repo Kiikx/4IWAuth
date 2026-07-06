@@ -97,3 +97,76 @@ Tables creees automatiquement au lancement :
 - Phase 3.1 : personnalisation et rapports termines.
 - Phase 3.2 : arsenal dynamique termine.
 - Phase 4 : validation manuelle a effectuer avec navigateur, Postman et cURL.
+
+## TP2 - Sessions et badge Batcave
+
+Le TP2 remplace l'authentification Basic Auth par un badge de session stocke dans un cookie signe.
+
+### Configuration
+
+Copier le fichier d'exemple puis adapter la cle de session :
+
+```bash
+cp .env.example .env
+```
+
+Variables attendues :
+
+```text
+PORT=3000
+SESSION_SECRET=une_cle_longue_et_aleatoire
+```
+
+Le cookie de session est configure avec :
+
+- nom `bat_identity` ;
+- `httpOnly: true` ;
+- `sameSite: 'strict'` ;
+- expiration apres 30 minutes.
+
+### Parcours TP2
+
+1. Demarrer le serveur :
+
+```bash
+npm start
+```
+
+2. Creer un compte si necessaire :
+
+```text
+http://localhost:3000/register.html
+```
+
+3. Ouvrir la page de connexion :
+
+```text
+http://localhost:3000/auth/login
+```
+
+4. Une fois connecte, le serveur cree une session et redirige vers :
+
+```text
+http://localhost:3000/bat-computer
+```
+
+5. La deconnexion propre se fait via :
+
+```text
+http://localhost:3000/auth/logout
+```
+
+### Structure TP2
+
+- `server.js` : point d'entree Express, configuration session et montage des routeurs.
+- `routes/auth.js` : login, traitement de login, inscription et logout.
+- `routes/batcave.js` : routes protegees de la Batcave et API internes.
+- `middlewares/authCheck.js` : verification de `req.session.user`.
+
+### Verification rapide
+
+```bash
+npm test
+```
+
+Le test verifie la syntaxe du serveur, de la base, des routeurs et du middleware.
