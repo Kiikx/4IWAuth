@@ -38,6 +38,7 @@
             </li>
           </ul>
         </div>
+        <a class="nav-link" href="/auth/logout">Se déconnecter</a>
       </div>
     </nav>
     <main class="container mt-5">
@@ -122,29 +123,16 @@
       const loadSecrets = async () => {
         const messageDiv = document.getElementById("arsenal-message")
         const grid = document.getElementById("arsenal-grid")
-        let authorization = sessionStorage.getItem("basicAuthHeader")
 
-        if (!authorization) {
-          const username = window.prompt("Utilisateur Basic Auth")
-          const password = window.prompt("Mot de passe Basic Auth")
+        try {
+          const response = await fetch("/api/secrets")
 
-          if (!username || !password) {
-            messageDiv.className = "alert alert-warning"
-            messageDiv.textContent = "Arsenal non chargé."
+          if (response.status === 401) {
+            window.location.href = "/auth/login"
             return
           }
 
-          authorization = "Basic " + btoa(username + ":" + password)
-          sessionStorage.setItem("basicAuthHeader", authorization)
-        }
-
-        try {
-          const response = await fetch("/api/secrets", {
-            headers: { Authorization: authorization }
-          })
-
           if (!response.ok) {
-            sessionStorage.removeItem("basicAuthHeader")
             messageDiv.className = "alert alert-danger"
             messageDiv.textContent = "Impossible de charger l'arsenal."
             return

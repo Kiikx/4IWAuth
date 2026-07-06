@@ -1,7 +1,7 @@
 // Fonction à appeler pour déconnecter l'utilisateur
 function logout () {
   // Appelle la route de logout pour forcer le navigateur à "oublier" les credentials
-  fetch('/logout')
+  fetch('/auth/logout')
     .catch(() => {
       // Le fetch échouera parce qu'on reçoit une 401, c'est normal
     })
