@@ -12,7 +12,7 @@ const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET
 
-authenticator.options = { window: 1 }
+authenticator.options = { window: 2 }
 
 const cookieOptions = {
   httpOnly: true,
@@ -65,6 +65,16 @@ const clearAuthCookies = res => {
   res.clearCookie('accessToken', cookieOptions)
   res.clearCookie('refreshToken', cookieOptions)
 }
+
+const normalizeTotpCode = code => String(code || '').replace(/\D/g, '')
+
+const validateTotp = (code, secret) => {
+  const cleanCode = normalizeTotpCode(code)
+
+  return cleanCode.length === 6 && authenticator.check(cleanCode, secret)
+}
+
+const totpError = "Code 2FA invalide ou expire. Verifiez que l'heure du telephone et du serveur est synchronisee."
 
 const validateRegistration = ({ username, password }) => {
   if (!username || typeof username !== 'string') {
@@ -182,7 +192,7 @@ router.post('/verify-2fa', (req, res) => {
   const { username, code } = req.body
   const cleanUsername = typeof username === 'string' ? username.trim() : ''
 
-  if (!cleanUsername || !code || !/^\d{6}$/.test(String(code))) {
+  if (!cleanUsername || normalizeTotpCode(code).length !== 6) {
     return res.status(400).json({ error: 'Nom utilisateur et code 2FA a 6 chiffres requis' })
   }
 
@@ -193,11 +203,11 @@ router.post('/verify-2fa', (req, res) => {
     return res.status(401).json({ error: 'Double authentification indisponible' })
   }
 
-  const isValid = authenticator.check(String(code), user.two_factor_secret)
+  const isValid = validateTotp(code, user.two_factor_secret)
 
   if (!isValid) {
     clearAuthCookies(res)
-    return res.status(401).json({ error: 'Code 2FA invalide ou expire' })
+    return res.status(401).json({ error: totpError })
   }
 
   const refreshToken = createRefreshToken(user.id)
@@ -280,7 +290,7 @@ router.post('/confirm-2fa', (req, res) => {
   const { code, username } = req.body
   const cleanUsername = typeof username === 'string' ? username.trim() : ''
 
-  if (!cleanUsername || !code || !/^\d{6}$/.test(String(code))) {
+  if (!cleanUsername || normalizeTotpCode(code).length !== 6) {
     return res.status(400).json({ error: 'Nom utilisateur et code TOTP a 6 chiffres requis' })
   }
 
@@ -290,10 +300,10 @@ router.post('/confirm-2fa', (req, res) => {
     return res.status(400).json({ error: 'Initialisation 2FA requise' })
   }
 
-  const isValid = authenticator.check(String(code), user.two_factor_secret)
+  const isValid = validateTotp(code, user.two_factor_secret)
 
   if (!isValid) {
-    return res.status(401).json({ error: 'Code 2FA invalide ou expire' })
+    return res.status(401).json({ error: totpError })
   }
 
   db.prepare('UPDATE users SET two_factor_enabled = 1 WHERE id = ?').run(user.id)

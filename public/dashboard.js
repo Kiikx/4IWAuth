@@ -149,7 +149,7 @@ if (setupDashboard2FAButton && dashboardConfirm2FAForm) {
 
   dashboardConfirm2FAForm.addEventListener('submit', async event => {
     event.preventDefault()
-    const code = document.getElementById('dashboard-2fa-code').value.trim()
+    const code = document.getElementById('dashboard-2fa-code').value.replace(/\D/g, '')
     const meResponse = await apiFetch('/api/me')
     const me = await meResponse.json()
 

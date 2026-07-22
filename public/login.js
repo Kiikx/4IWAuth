@@ -46,7 +46,7 @@ loginForm.addEventListener('submit', async event => {
 
 verifyForm.addEventListener('submit', async event => {
   event.preventDefault()
-  const code = document.getElementById('totp-code').value.trim()
+  const code = document.getElementById('totp-code').value.replace(/\D/g, '')
 
   const response = await fetch('/api/verify-2fa', {
     method: 'POST',
@@ -87,7 +87,7 @@ setupButton.addEventListener('click', async () => {
 
 confirmForm.addEventListener('submit', async event => {
   event.preventDefault()
-  const code = document.getElementById('setup-code').value.trim()
+  const code = document.getElementById('setup-code').value.replace(/\D/g, '')
 
   const response = await fetch('/api/auth/confirm-2fa', {
     method: 'POST',
