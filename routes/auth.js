@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const QRCode = require('qrcode')
-const { authenticator } = require('@otplib/preset-v11')
 const db = require('../db')
 const { isAuthenticated } = require('../middlewares/authCheck')
 
@@ -12,7 +11,6 @@ const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET
 
-authenticator.options = { window: 2 }
 
 const cookieOptions = {
   httpOnly: true,
@@ -75,10 +73,72 @@ const generateTotpSecret = () => {
   return Array.from(randomBytes, byte => alphabet[byte % alphabet.length]).join('')
 }
 
+const createTotpUri = (username, secret) => {
+  const label = encodeURIComponent(`Batcave:${username}`)
+  const issuer = encodeURIComponent('Batcave')
+
+  return `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=30`
+}
+
+const decodeBase32 = secret => {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  const cleanSecret = String(secret || '').replace(/=+$/g, '').replace(/\s/g, '').toUpperCase()
+  let bits = ''
+  const bytes = []
+
+  for (const char of cleanSecret) {
+    const value = alphabet.indexOf(char)
+
+    if (value === -1) {
+      return null
+    }
+
+    bits += value.toString(2).padStart(5, '0')
+  }
+
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.slice(i, i + 8), 2))
+  }
+
+  return Buffer.from(bytes)
+}
+
+const generateTotpCode = (secret, step = Math.floor(Date.now() / 30000)) => {
+  const key = decodeBase32(secret)
+
+  if (!key) {
+    return null
+  }
+
+  const counter = Buffer.alloc(8)
+  counter.writeUInt32BE(Math.floor(step / 0x100000000), 0)
+  counter.writeUInt32BE(step >>> 0, 4)
+
+  const hmac = crypto.createHmac('sha1', key).update(counter).digest()
+  const offset = hmac[hmac.length - 1] & 0xf
+  const binary = ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff)
+
+  return String(binary % 1000000).padStart(6, '0')
+}
+
 const validateTotp = (code, secret) => {
   const cleanCode = normalizeTotpCode(code)
+  const currentStep = Math.floor(Date.now() / 30000)
 
-  return cleanCode.length === 6 && authenticator.check(cleanCode, secret)
+  if (cleanCode.length !== 6) {
+    return false
+  }
+
+  for (let window = -2; window <= 2; window++) {
+    if (generateTotpCode(secret, currentStep + window) === cleanCode) {
+      return true
+    }
+  }
+
+  return false
 }
 
 const totpError = "Code 2FA invalide ou expire. Verifiez que l'heure du telephone et du serveur est synchronisee."
@@ -278,7 +338,7 @@ router.post('/setup-2fa', async (req, res) => {
   }
 
   const secret = generateTotpSecret()
-  const otpauthUrl = authenticator.keyuri(user.username, 'Batcave', secret)
+  const otpauthUrl = createTotpUri(user.username, secret)
 
   db.prepare('UPDATE users SET two_factor_secret = ?, two_factor_enabled = 0 WHERE id = ?')
     .run(secret, user.id)
