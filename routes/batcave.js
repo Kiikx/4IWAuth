@@ -15,7 +15,7 @@ router.get(['/admin-page', '/admin-page.html'], (req, res) => {
 
 router.get(['/bat-computer', '/bat-computer.html'], (req, res) => {
   const html = fs.readFileSync(batComputerPath, 'utf8')
-  res.send(html.replace('Bienvenue...', `Bienvenue, Justicier ${req.session.user.username}`))
+  res.send(html.replace('Bienvenue...', `Bienvenue, Justicier ${req.user.username}`))
 })
 
 router.get('/api/secrets', (req, res) => {
@@ -29,7 +29,7 @@ router.get('/api/secrets', (req, res) => {
 })
 
 router.get('/api/me', (req, res) => {
-  res.json(req.session.user)
+  res.json(req.user)
 })
 
 router.post('/api/reports', (req, res) => {
@@ -43,10 +43,10 @@ router.post('/api/reports', (req, res) => {
     const insert = db.prepare(
       'INSERT INTO reports (user_id, mission_note) VALUES (?, ?)'
     )
-    insert.run(req.session.user.id, mission_note)
+    insert.run(req.user.id, mission_note)
     return res.status(201).json({ message: 'Rapport enregistré avec succès !' })
   } catch (err) {
-    return res.status(500).send('Erreur lors de l\'enregistrement du rapport.')
+    return res.status(500).send("Erreur lors de l'enregistrement du rapport.")
   }
 })
 

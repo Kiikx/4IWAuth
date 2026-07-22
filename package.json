@@ -7,7 +7,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "watch": "nodemon server.js",
-    "test": "node --check server.js && node --check db.js && node --check routes/auth.js && node --check routes/batcave.js && node --check middlewares/authCheck.js"
+    "test": "node --check server.js && node --check db.js && node --check routes/auth.js && node --check routes/batcave.js && node --check middlewares/authCheck.js && node --check public/dashboard.js"
   },
   "keywords": [],
   "author": "",
@@ -15,9 +15,10 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.10.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.14"
   }
 }

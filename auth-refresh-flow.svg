@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#1f2937" />
+    </marker>
+    <style>
+      text { font-family: Arial, sans-serif; fill: #111827; }
+      .actor { fill: #e0f2fe; stroke: #0369a1; stroke-width: 2; }
+      .api { fill: #fef3c7; stroke: #b45309; stroke-width: 2; }
+      .db { fill: #dcfce7; stroke: #15803d; stroke-width: 2; }
+      .line { stroke: #1f2937; stroke-width: 2; marker-end: url(#arrow); fill: none; }
+      .note { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1.5; }
+      .small { font-size: 18px; }
+      .label { font-size: 21px; font-weight: 700; }
+      .title { font-size: 32px; font-weight: 700; }
+    </style>
+  </defs>
+
+  <rect width="1180" height="760" fill="#ffffff" />
+  <text x="52" y="58" class="title">Cycle JWT accessToken / refreshToken de la Batcave</text>
+
+  <rect x="55" y="110" width="225" height="70" rx="10" class="actor" />
+  <text x="82" y="153" class="label">Navigateur / Frontend</text>
+
+  <rect x="345" y="110" width="215" height="70" rx="10" class="actor" />
+  <text x="405" y="153" class="label">Middleware</text>
+
+  <rect x="625" y="110" width="220" height="70" rx="10" class="api" />
+  <text x="672" y="153" class="label">API Express</text>
+
+  <rect x="910" y="110" width="215" height="70" rx="10" class="db" />
+  <text x="956" y="153" class="label">SQLite</text>
+
+  <line x1="168" y1="180" x2="168" y2="700" stroke="#cbd5e1" stroke-width="2" />
+  <line x1="452" y1="180" x2="452" y2="700" stroke="#cbd5e1" stroke-width="2" />
+  <line x1="735" y1="180" x2="735" y2="700" stroke="#cbd5e1" stroke-width="2" />
+  <line x1="1018" y1="180" x2="1018" y2="700" stroke="#cbd5e1" stroke-width="2" />
+
+  <path d="M168 230 H735" class="line" />
+  <text x="245" y="220" class="small">POST /auth/login avec identifiants</text>
+
+  <path d="M735 275 H1018" class="line" />
+  <text x="790" y="265" class="small">Stocke le refreshToken opaque hashé</text>
+
+  <path d="M735 320 H168" class="line" />
+  <text x="280" y="310" class="small">Cookies httpOnly: accessToken 15s + refreshToken 7j</text>
+
+  <path d="M168 390 H452" class="line" />
+  <text x="205" y="380" class="small">Requête API protégée</text>
+
+  <path d="M452 435 H168" class="line" />
+  <text x="215" y="425" class="small">401 si accessToken expiré</text>
+
+  <path d="M168 500 H735" class="line" />
+  <text x="275" y="490" class="small">POST /api/auth/refresh en arrière-plan</text>
+
+  <path d="M735 545 H1018" class="line" />
+  <text x="820" y="535" class="small">Vérifie hash et expiration</text>
+
+  <path d="M735 590 H168" class="line" />
+  <text x="296" y="580" class="small">Nouveau cookie accessToken 15s</text>
+
+  <path d="M168 650 H452" class="line" />
+  <text x="212" y="640" class="small">Rejeu transparent de la requête initiale</text>
+
+  <rect x="630" y="655" width="315" height="50" rx="8" class="note" />
+  <text x="650" y="687" class="small">Logout: DELETE du refreshToken en BDD</text>
+</svg>

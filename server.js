@@ -1,7 +1,7 @@
 require('dotenv').config()
 
 const express = require('express')
-const session = require('express-session')
+const cookieParser = require('cookie-parser')
 const authRouter = require('./routes/auth')
 const batcaveRouter = require('./routes/batcave')
 
@@ -16,21 +16,10 @@ if (!SESSION_SECRET) {
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static('public'))
-
-app.use(session({
-  name: 'bat_identity',
-  secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'strict',
-    maxAge: 1800000,
-    secure: process.env.NODE_ENV === 'production'
-  }
-}))
+app.use(cookieParser())
 
 app.use('/auth', authRouter)
+app.use('/api/auth', authRouter)
 app.use(batcaveRouter)
 
 app.listen(PORT, () => {
