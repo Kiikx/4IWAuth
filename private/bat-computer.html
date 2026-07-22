@@ -82,6 +82,20 @@
               <div id="password-message" class="mt-3"></div>
             </div>
           </div>
+          <div class="card mt-4">
+            <div class="card-body">
+              <h2 class="h5 card-title">Double authentification</h2>
+              <button id="dashboard-setup-2fa" type="button" class="btn btn-outline-primary">Generer un nouveau QR code</button>
+              <div id="dashboard-2fa-result" class="mt-3"></div>
+              <form id="dashboard-confirm-2fa" class="mt-3 d-none">
+                <div class="mb-3">
+                  <label for="dashboard-2fa-code" class="form-label">Code 2FA</label>
+                  <input id="dashboard-2fa-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" class="form-control" required />
+                </div>
+                <button type="submit" class="btn btn-success">Activer</button>
+              </form>
+            </div>
+          </div>
           <section class="mt-4">
             <h2 class="h4">Arsenal</h2>
             <div id="arsenal-message" class="alert alert-info">Chargement de l'arsenal...</div>

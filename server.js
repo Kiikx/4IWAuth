@@ -14,7 +14,16 @@ if (!SESSION_SECRET) {
   throw new Error('SESSION_SECRET doit être défini dans le fichier .env')
 }
 
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+      styleSrc: ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"]
+    }
+  }
+}))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static('public'))

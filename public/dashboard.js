@@ -124,3 +124,49 @@ const loadSecrets = async () => {
 }
 
 loadSecrets()
+
+const setupDashboard2FAButton = document.getElementById('dashboard-setup-2fa')
+const dashboard2FAResult = document.getElementById('dashboard-2fa-result')
+const dashboardConfirm2FAForm = document.getElementById('dashboard-confirm-2fa')
+
+if (setupDashboard2FAButton && dashboardConfirm2FAForm) {
+  setupDashboard2FAButton.addEventListener('click', async () => {
+    const response = await apiFetch('/api/auth/setup-2fa', { method: 'POST' })
+    const data = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      dashboard2FAResult.innerHTML = `<div class="alert alert-danger">${data.error || 'Initialisation 2FA impossible.'}</div>`
+      return
+    }
+
+    dashboard2FAResult.innerHTML = `
+      <img src="${data.qrCode}" alt="QR code 2FA" class="img-fluid border rounded mb-3" />
+      <p class="mb-1">Secret de secours :</p>
+      <code>${data.secret}</code>
+    `
+    dashboardConfirm2FAForm.classList.remove('d-none')
+  })
+
+  dashboardConfirm2FAForm.addEventListener('submit', async event => {
+    event.preventDefault()
+    const code = document.getElementById('dashboard-2fa-code').value.trim()
+    const meResponse = await apiFetch('/api/me')
+    const me = await meResponse.json()
+
+    const response = await apiFetch('/api/auth/confirm-2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: me.username, code })
+    })
+    const data = await response.json().catch(() => ({}))
+
+    if (response.ok) {
+      dashboard2FAResult.innerHTML = '<div class="alert alert-success">Double authentification activee.</div>'
+      dashboardConfirm2FAForm.reset()
+      dashboardConfirm2FAForm.classList.add('d-none')
+      return
+    }
+
+    dashboard2FAResult.innerHTML = `<div class="alert alert-danger">${data.error || 'Activation 2FA impossible.'}</div>`
+  })
+}

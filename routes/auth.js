@@ -12,6 +12,8 @@ const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET
 
+authenticator.options = { window: 1 }
+
 const cookieOptions = {
   httpOnly: true,
   sameSite: 'strict',
@@ -102,9 +104,9 @@ router.get('/login', (req, res) => {
         />
       </head>
       <body>
-        <main class="container mt-5" style="max-width: 520px;">
+        <main class="container mt-5" style="max-width: 560px;">
           <h1>Connexion Batcave</h1>
-          <form method="post" action="/auth/login" class="mt-4">
+          <form id="login-form" class="mt-4">
             <div class="mb-3">
               <label for="username" class="form-label">Nom d'utilisateur</label>
               <input id="username" name="username" type="text" class="form-control" required />
@@ -113,10 +115,34 @@ router.get('/login', (req, res) => {
               <label for="password" class="form-label">Mot de passe</label>
               <input id="password" name="password" type="password" class="form-control" required />
             </div>
-            <button type="submit" class="btn btn-primary">Se connecter</button>
+            <button type="submit" class="btn btn-primary">Continuer</button>
             <a href="/register.html" class="btn btn-link">Créer un compte</a>
           </form>
+
+          <form id="verify-2fa-form" class="mt-4 d-none">
+            <div class="mb-3">
+              <label for="totp-code" class="form-label">Code 2FA</label>
+              <input id="totp-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-success">Valider la connexion</button>
+          </form>
+
+          <section id="setup-2fa-panel" class="mt-4 d-none">
+            <div class="alert alert-warning">Activez la 2FA avant de terminer la connexion.</div>
+            <button id="start-2fa-setup" type="button" class="btn btn-warning">Generer le QR code</button>
+            <div id="setup-2fa-result" class="mt-3"></div>
+            <form id="confirm-2fa-form" class="mt-3 d-none">
+              <div class="mb-3">
+                <label for="setup-code" class="form-label">Premier code 2FA</label>
+                <input id="setup-code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" class="form-control" required />
+              </div>
+              <button type="submit" class="btn btn-success">Activer la 2FA</button>
+            </form>
+          </section>
+
+          <div id="login-message" class="mt-3"></div>
         </main>
+        <script src="/login.js"></script>
       </body>
     </html>
   `)
@@ -204,11 +230,34 @@ router.post('/register', async (req, res) => {
   }
 })
 
-router.post('/setup-2fa', isAuthenticated, async (req, res) => {
-  const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(req.user.id)
+const getFirstFactorUser = async (req) => {
+  if (req.cookies?.accessToken) {
+    try {
+      const payload = jwt.verify(req.cookies.accessToken, JWT_SECRET)
+      const user = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(payload.sub))
+      if (user) {
+        return user
+      }
+    } catch (err) {}
+  }
+
+  const cleanUsername = typeof req.body.username === 'string' ? req.body.username.trim() : ''
+
+  if (!cleanUsername || !req.body.password) {
+    return null
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(cleanUsername)
+  const passwordMatches = user && await bcrypt.compare(req.body.password, user.password_hash)
+
+  return passwordMatches ? user : null
+}
+
+router.post('/setup-2fa', async (req, res) => {
+  const user = await getFirstFactorUser(req)
 
   if (!user) {
-    return res.status(404).json({ error: 'Utilisateur introuvable' })
+    return res.status(401).json({ error: 'Premier facteur invalide' })
   }
 
   const secret = authenticator.generateSecret()
@@ -222,23 +271,20 @@ router.post('/setup-2fa', isAuthenticated, async (req, res) => {
   return res.json({
     qrCode,
     secret,
+    username: user.username,
     message: 'Scannez ce QR code puis confirmez le premier code TOTP.'
   })
 })
 
-router.post('/confirm-2fa', isAuthenticated, (req, res) => {
+router.post('/confirm-2fa', (req, res) => {
   const { code, username } = req.body
-  const cleanUsername = typeof username === 'string' ? username.trim() : req.user.username
+  const cleanUsername = typeof username === 'string' ? username.trim() : ''
 
-  if (!code || !/^\d{6}$/.test(String(code))) {
-    return res.status(400).json({ error: 'Code TOTP a 6 chiffres requis' })
+  if (!cleanUsername || !code || !/^\d{6}$/.test(String(code))) {
+    return res.status(400).json({ error: 'Nom utilisateur et code TOTP a 6 chiffres requis' })
   }
 
-  if (cleanUsername !== req.user.username) {
-    return res.status(403).json({ error: 'Utilisateur non autorise' })
-  }
-
-  const user = db.prepare('SELECT id, two_factor_secret FROM users WHERE id = ?').get(req.user.id)
+  const user = db.prepare('SELECT id, two_factor_secret FROM users WHERE username = ?').get(cleanUsername)
 
   if (!user || !user.two_factor_secret) {
     return res.status(400).json({ error: 'Initialisation 2FA requise' })
