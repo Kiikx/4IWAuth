@@ -2,6 +2,7 @@ require('dotenv').config()
 
 const express = require('express')
 const cookieParser = require('cookie-parser')
+const helmet = require('helmet')
 const authRouter = require('./routes/auth')
 const batcaveRouter = require('./routes/batcave')
 
@@ -13,6 +14,7 @@ if (!SESSION_SECRET) {
   throw new Error('SESSION_SECRET doit être défini dans le fichier .env')
 }
 
+app.use(helmet())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static('public'))

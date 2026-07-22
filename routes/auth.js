@@ -6,7 +6,7 @@ const db = require('../db')
 const { isAuthenticated } = require('../middlewares/authCheck')
 
 const router = express.Router()
-const ACCESS_TOKEN_MAX_AGE = 15 * 1000
+const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 const JWT_SECRET = process.env.JWT_SECRET || process.env.SESSION_SECRET
 
@@ -26,7 +26,7 @@ const createAccessToken = user => jwt.sign(
   JWT_SECRET,
   {
     subject: String(user.id),
-    expiresIn: '15s'
+    expiresIn: '15m'
   }
 )
 
