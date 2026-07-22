@@ -68,6 +68,13 @@ const clearAuthCookies = res => {
 
 const normalizeTotpCode = code => String(code || '').replace(/\D/g, '')
 
+const generateTotpSecret = () => {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  const randomBytes = crypto.randomBytes(20)
+
+  return Array.from(randomBytes, byte => alphabet[byte % alphabet.length]).join('')
+}
+
 const validateTotp = (code, secret) => {
   const cleanCode = normalizeTotpCode(code)
 
@@ -270,7 +277,7 @@ router.post('/setup-2fa', async (req, res) => {
     return res.status(401).json({ error: 'Premier facteur invalide' })
   }
 
-  const secret = authenticator.generateSecret()
+  const secret = generateTotpSecret()
   const otpauthUrl = authenticator.keyuri(user.username, 'Batcave', secret)
 
   db.prepare('UPDATE users SET two_factor_secret = ?, two_factor_enabled = 0 WHERE id = ?')
