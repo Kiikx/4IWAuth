@@ -2,6 +2,8 @@ const express = require('express')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
+const QRCode = require('qrcode')
+const { authenticator } = require('@otplib/preset-v11')
 const db = require('../db')
 const { isAuthenticated } = require('../middlewares/authCheck')
 
@@ -159,6 +161,57 @@ router.post('/register', async (req, res) => {
   } catch (err) {
     return res.status(409).send("Erreur : l'utilisateur existe déjà.")
   }
+})
+
+router.post('/setup-2fa', isAuthenticated, async (req, res) => {
+  const user = db.prepare('SELECT id, username FROM users WHERE id = ?').get(req.user.id)
+
+  if (!user) {
+    return res.status(404).json({ error: 'Utilisateur introuvable' })
+  }
+
+  const secret = authenticator.generateSecret()
+  const otpauthUrl = authenticator.keyuri(user.username, 'Batcave', secret)
+
+  db.prepare('UPDATE users SET two_factor_secret = ?, two_factor_enabled = 0 WHERE id = ?')
+    .run(secret, user.id)
+
+  const qrCode = await QRCode.toDataURL(otpauthUrl)
+
+  return res.json({
+    qrCode,
+    secret,
+    message: 'Scannez ce QR code puis confirmez le premier code TOTP.'
+  })
+})
+
+router.post('/confirm-2fa', isAuthenticated, (req, res) => {
+  const { code, username } = req.body
+  const cleanUsername = typeof username === 'string' ? username.trim() : req.user.username
+
+  if (!code || !/^\d{6}$/.test(String(code))) {
+    return res.status(400).json({ error: 'Code TOTP a 6 chiffres requis' })
+  }
+
+  if (cleanUsername !== req.user.username) {
+    return res.status(403).json({ error: 'Utilisateur non autorise' })
+  }
+
+  const user = db.prepare('SELECT id, two_factor_secret FROM users WHERE id = ?').get(req.user.id)
+
+  if (!user || !user.two_factor_secret) {
+    return res.status(400).json({ error: 'Initialisation 2FA requise' })
+  }
+
+  const isValid = authenticator.check(String(code), user.two_factor_secret)
+
+  if (!isValid) {
+    return res.status(401).json({ error: 'Code 2FA invalide ou expire' })
+  }
+
+  db.prepare('UPDATE users SET two_factor_enabled = 1 WHERE id = ?').run(user.id)
+
+  return res.json({ message: 'Double authentification activee avec succes' })
 })
 
 router.get('/logout', (req, res) => {
