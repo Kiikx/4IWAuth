@@ -127,19 +127,60 @@ router.post('/login', async (req, res) => {
   const cleanUsername = typeof username === 'string' ? username.trim() : ''
 
   if (!cleanUsername || !password) {
-    return res.status(400).send('Identifiants manquants')
+    return res.status(400).json({ error: 'Identifiants manquants' })
   }
 
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(cleanUsername)
   const passwordMatches = user && await bcrypt.compare(password, user.password_hash)
 
   if (!passwordMatches) {
-    return res.status(401).send('Identifiants invalides')
+    return res.status(401).json({ error: 'Identifiants invalides' })
+  }
+
+  if (!user.two_factor_enabled) {
+    clearAuthCookies(res)
+    return res.status(403).json({
+      error: 'Activation 2FA obligatoire avant connexion complete',
+      requires2FASetup: true
+    })
+  }
+
+  return res.json({
+    requires2FA: true,
+    username: user.username,
+    message: 'Code 2FA requis pour terminer la connexion'
+  })
+})
+
+router.post('/verify-2fa', (req, res) => {
+  const { username, code } = req.body
+  const cleanUsername = typeof username === 'string' ? username.trim() : ''
+
+  if (!cleanUsername || !code || !/^\d{6}$/.test(String(code))) {
+    return res.status(400).json({ error: 'Nom utilisateur et code 2FA a 6 chiffres requis' })
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(cleanUsername)
+
+  if (!user || !user.two_factor_enabled || !user.two_factor_secret) {
+    clearAuthCookies(res)
+    return res.status(401).json({ error: 'Double authentification indisponible' })
+  }
+
+  const isValid = authenticator.check(String(code), user.two_factor_secret)
+
+  if (!isValid) {
+    clearAuthCookies(res)
+    return res.status(401).json({ error: 'Code 2FA invalide ou expire' })
   }
 
   const refreshToken = createRefreshToken(user.id)
   setAuthCookies(res, user, refreshToken)
-  return res.redirect('/bat-computer')
+
+  return res.json({
+    message: 'Connexion validee',
+    redirect: '/bat-computer'
+  })
 })
 
 router.post('/register', async (req, res) => {

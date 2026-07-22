@@ -22,6 +22,7 @@ app.use(cookieParser())
 
 app.use('/auth', authRouter)
 app.use('/api/auth', authRouter)
+app.use('/api', authRouter)
 app.use(batcaveRouter)
 
 app.listen(PORT, () => {
